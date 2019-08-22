@@ -42,12 +42,17 @@ func (c *CPU) operate(op *Operator) {
 	case stx:
 	case sty:
 	case tax:
+		c.TAX()
 	case tay:
+		c.TAY()
 	case tsx:
+		c.TSX()
 	case txa:
+		c.TXA()
 	case txs:
 		c.TXS()
 	case tya:
+		c.TYA()
 	case adc:
 	case and:
 	case asl:
@@ -85,11 +90,17 @@ func (c *CPU) operate(op *Operator) {
 	case bvc:
 	case bvs:
 	case clc:
+		c.CLC()
 	case cld:
+		c.CLD()
 	case cli:
+		c.CLI()
 	case clv:
+		c.CLV()
 	case sec:
+		c.SEC()
 	case sed:
+		c.SED()
 	case sei:
 		c.SEI()
 	case brk:
@@ -125,11 +136,67 @@ func (c *CPU) STA() {
 	c.source[val] = c.register.A
 }
 
+func (c *CPU) TAX() {
+	c.register.X = c.register.A
+}
+
+func (c *CPU) TAY() {
+	c.register.Y = c.register.A
+}
+
+func (c *CPU) TSX() {
+	c.register.X = c.register.S
+}
+
+func (c *CPU) TXA() {
+	c.register.A = c.register.X
+}
+
 func (c *CPU) TXS() {
 	c.register.S = c.register.X
 }
 
+func (c *CPU) TYA() {
+	c.register.A = c.register.Y
+}
+
 func (c *CPU) JSR() {
+}
+
+/*
+
+7	N	ネガティブ	Aの7ビット目と同じになります。負数の判定用。
+6	V	オーバーフロー	演算がオーバーフローを起こした場合セットされます。
+5	R	予約済み	使用できません。常にセットされています。
+4	B	ブレークモード	BRK発生時はセットされ、IRQ発生時はクリアされます。
+3	D	デシマルモード	セットすると、BCDモードで動作します。(ファミコンでは未実装)
+2	I	IRQ禁止	クリアするとIRQが許可され、セットするとIRQが禁止になります。
+1	Z	ゼロ	演算結果が0になった場合セットされます。ロード命令でも変化します。
+0	C	キャリー	キャリー発生時セットされます。
+*/
+
+func (c *CPU) CLC() {
+	c.register.P.C = false
+}
+
+func (c *CPU) CLD() {
+	// not implements in NES
+}
+
+func (c *CPU) CLI() {
+	c.register.P.I = false
+}
+
+func (c *CPU) CLV() {
+	c.register.P.V = false
+}
+
+func (c *CPU) SEC() {
+	c.register.P.C = true
+}
+
+func (c *CPU) SED() {
+	// not implements in NES
 }
 
 func (c *CPU) SEI() {

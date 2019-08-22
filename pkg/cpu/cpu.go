@@ -17,9 +17,9 @@ func (c *CPU) Pos() int {
 
 func (c *CPU) Exec() error {
 	fmt.Println("len:::", len(c.source))
-	for c.Next() {
-		fmt.Println(c.Current())
-		c.operate(c.Current())
+	for c.HasNext() {
+		fmt.Println(Lookup(c.Current()))
+		c.operate(Lookup(c.Current()))
 
 		fmt.Printf("%x\n", c.source[c.Pos()])
 	}
@@ -30,15 +30,12 @@ func (c *CPU) operate(op *Operator) {
 	switch op.order {
 	case lda:
 		c.LDA()
-		c.Next()
 	case ldx:
 		c.LDX()
-		c.Next()
 	case ldy:
 
 	case sta:
 		c.STA()
-		c.Next()
 	case stx:
 	case sty:
 	case tax:
@@ -109,13 +106,18 @@ func (c *CPU) operate(op *Operator) {
 	}
 }
 
-func (c *CPU) Current() *Operator {
-	return Lookup(c.source[c.register.PC])
+func (c *CPU) Current() byte {
+	return c.source[c.register.PC]
 }
 
-func (c *CPU) Next() bool {
+func (c *CPU) Next() byte {
 	c.register.PC++
-	return len(c.source) > c.Pos()
+	return c.source[c.register.PC]
+}
+
+func (c *CPU) HasNext() bool {
+	c.register.PC++
+	return len(c.source) > c.Pos()+1
 }
 
 func (c *CPU) LDA() {
@@ -192,29 +194,35 @@ func (c *CPU) SEI() {
 }
 
 func (c *CPU) addressingValue() uint16 {
-	op := c.Current()
+	op := Lookup(c.Current())
 	switch op.addressing {
 	case implied:
 	case accumulator:
 		return uint16(c.register.A)
 	case immediate:
-		return uint16(c.source[c.Pos()+1])
+		return uint16(c.Next())
 	case zeropage:
-		return uint16(c.source[c.source[c.Pos()+1]])
+		return uint16(c.Next())
 	case zeropageX:
-		return uint16(c.source[uint8(c.source[c.Pos()+1])+c.register.X])
+		return uint16(c.Next())
 	case zeropageY:
-		return uint16(c.source[uint8(c.source[c.Pos()+1])+c.register.Y])
+		return uint16(c.source[uint8(c.Next())+c.register.Y])
 	case relative:
-		return uint16(c.source[int(c.source[c.Pos()+1])+c.Pos()])
+		return uint16(c.source[int(c.Next())+c.Pos()])
 	case absolute:
-		addr := c.convertValue(c.source[c.Pos()+2], c.source[c.Pos()+1])
+		lower := c.Next()
+		upper := c.Next()
+		addr := c.convertValue(upper, lower)
 		return uint16(c.source[c.source[addr]])
 	case absoluteX:
-		addr := c.convertValue(c.source[c.Pos()+2], c.source[c.Pos()+1]) + uint16(c.register.X)
+		lower := c.Next()
+		upper := c.Next()
+		addr := c.convertValue(upper, lower) + uint16(c.register.X)
 		return uint16(c.source[c.source[addr]])
 	case absoluteY:
-		addr := c.convertValue(c.source[c.Pos()+2], c.source[c.Pos()+1]) + uint16(c.register.Y)
+		lower := c.Next()
+		upper := c.Next()
+		addr := c.convertValue(upper, lower) + uint16(c.register.Y)
 		return uint16(c.source[c.source[addr]])
 	case indirect:
 	case indirectX:
@@ -231,7 +239,7 @@ func (c *CPU) convertValue(upper, lower byte) uint16 {
 func New(source []byte) Executor {
 	return &CPU{
 		register: &Register{
-			PC: -1,
+			PC: 0,
 			P:  &StatusRegister{},
 		},
 		source: source,

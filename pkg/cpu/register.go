@@ -6,7 +6,7 @@ type Register struct {
 	Y  uint8
 	S  uint8
 	P  *StatusRegister
-	PC int64
+	PC uint16
 }
 
 type StatusRegister struct {

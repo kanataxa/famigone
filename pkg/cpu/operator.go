@@ -243,6 +243,21 @@ type Operator struct {
 	addressing addressingType
 }
 
+func (o *Operator) ConsumedPos() int {
+	switch o.addressing {
+	case implied, accumulator:
+		return 0
+	case immediate, zeropage, zeropageX, zeropageY, relative:
+		return 1
+	case absolute, absoluteX, absoluteY:
+		return 2
+	case indirect, indirectX, indirectY:
+		return 1
+	default:
+		return 1
+	}
+}
+
 func (o *Operator) String() string {
 	return fmt.Sprintf("[%s] [%s]", o.order, o.addressing)
 }

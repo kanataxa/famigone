@@ -1,12 +1,12 @@
 package cpu
 
 type Register struct {
-	A  int8
-	X  int8
-	Y  int8
-	S  int8
-	P  StatusRegister
-	PC int16
+	A  uint8
+	X  uint8
+	Y  uint8
+	S  uint8
+	P  *StatusRegister
+	PC int64
 }
 
 type StatusRegister struct {

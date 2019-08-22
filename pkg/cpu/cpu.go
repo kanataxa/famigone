@@ -104,6 +104,7 @@ func (c *CPU) operate(op *Operator) {
 	case nop:
 
 	}
+	c.Next()
 }
 
 func (c *CPU) Current() byte {
@@ -116,7 +117,6 @@ func (c *CPU) Next() byte {
 }
 
 func (c *CPU) HasNext() bool {
-	c.register.PC++
 	return len(c.source) > c.Pos()+1
 }
 

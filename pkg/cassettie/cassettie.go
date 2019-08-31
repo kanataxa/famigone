@@ -1,11 +1,11 @@
-package rom
+package cassettie
 
 import (
 	"encoding/binary"
-	"fmt"
 	"io/ioutil"
 	"os"
 
+	"github.com/kanataxa/famigone/pkg/memory"
 	"github.com/pkg/errors"
 )
 
@@ -54,10 +54,18 @@ func (i *iNESHeader) validate() error {
 	return nil
 }
 
-type ROM struct {
+type Cassettie struct {
 	header *iNESHeader
-	prg    []byte
-	chr    []byte
+	prg    *memory.ROM
+	chr    *memory.ROM
+}
+
+func (c *Cassettie) ProgramROM() *memory.ROM {
+	return c.prg
+}
+
+func (c *Cassettie) CharacterROM() *memory.ROM {
+	return c.chr
 }
 
 func newHeader(path string) (*iNESHeader, error) {
@@ -77,7 +85,7 @@ func newHeader(path string) (*iNESHeader, error) {
 	return &header, nil
 }
 
-func New(path string) (*ROM, error) {
+func New(path string) (*Cassettie, error) {
 	header, err := newHeader(path)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -88,13 +96,10 @@ func New(path string) (*ROM, error) {
 	}
 	prg := data[headerSize : headerSize+int(header.SizePRG)*prgROMSize]
 	chr := data[len(prg) : len(prg)+int(header.SizeCHR)*chrROMSize]
-	for _, c := range prg {
-		fmt.Printf("%x\n", c)
-	}
 
-	return &ROM{
+	return &Cassettie{
 		header: header,
-		prg:    prg,
-		chr:    chr,
+		prg:    memory.NewROM(prg),
+		chr:    memory.NewROM(chr),
 	}, nil
 }

@@ -13,3 +13,7 @@ func NewROM(source []byte) *ROM {
 func (r *ROM) Read(addr uint16) byte {
 	return r.source[addr]
 }
+
+func (r *ROM) Size() int {
+	return len(r.source)
+}

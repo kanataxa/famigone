@@ -1,12 +1,12 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"path/filepath"
 
 	"github.com/kanataxa/famigone/pkg/bus"
 	"github.com/kanataxa/famigone/pkg/cassette"
+	"github.com/kanataxa/famigone/pkg/cpu"
 )
 
 func main() {
@@ -15,5 +15,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	fmt.Println(bus.New(c))
+	b := bus.New(c)
+	e := cpu.New(b)
+
+	e.Exec()
 }

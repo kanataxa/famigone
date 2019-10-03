@@ -1,27 +1,30 @@
 package cpu
 
-import "fmt"
+import (
+	"fmt"
+
+	"github.com/kanataxa/famigone/pkg/bus"
+)
 
 type CPU struct {
 	register *Register
-	source   []byte
+	bus      *bus.Bus
 }
 
 type Executor interface {
 	Exec() error
 }
 
-func (c *CPU) Pos() int {
-	return int(c.register.PC)
+func (c *CPU) Pos() uint16 {
+	return c.register.PC
 }
 
 func (c *CPU) Exec() error {
-	fmt.Println("len:::", len(c.source))
 	for c.HasNext() {
 		fmt.Println(Lookup(c.Current()))
 		c.operate(Lookup(c.Current()))
 
-		fmt.Printf("%x\n", c.source[c.Pos()])
+		fmt.Printf("%x\n", c.bus.ReadROM(c.Pos()))
 	}
 	return nil
 }
@@ -108,16 +111,16 @@ func (c *CPU) operate(op *Operator) {
 }
 
 func (c *CPU) Current() byte {
-	return c.source[c.register.PC]
+	return c.bus.ReadROM(c.register.PC)
 }
 
 func (c *CPU) Next() byte {
 	c.register.PC++
-	return c.source[c.register.PC]
+	return c.bus.ReadROM(c.register.PC)
 }
 
 func (c *CPU) HasNext() bool {
-	return len(c.source) > c.Pos()+1
+	return c.bus.ROMSize() > int(c.Pos())+1
 }
 
 func (c *CPU) LDA() {
@@ -135,7 +138,7 @@ func (c *CPU) LDX() {
 func (c *CPU) STA() {
 	val := c.addressingValue()
 	fmt.Println("value", val)
-	c.source[val] = c.register.A
+	c.bus.Write(val, c.register.A)
 }
 
 func (c *CPU) TAX() {
@@ -206,24 +209,24 @@ func (c *CPU) addressingValue() uint16 {
 	case zeropageX:
 		return uint16(c.Next())
 	case zeropageY:
-		return uint16(c.source[uint8(c.Next())+c.register.Y])
+		return uint16(c.bus.ReadROM(uint16(c.Next()) + uint16(c.register.Y)))
 	case relative:
-		return uint16(c.source[int(c.Next())+c.Pos()])
+		return uint16(c.bus.ReadROM(uint16(c.Next()) + c.Pos()))
 	case absolute:
 		lower := c.Next()
 		upper := c.Next()
 		addr := c.convertValue(upper, lower)
-		return uint16(c.source[c.source[addr]])
+		return uint16(c.bus.ReadROM(uint16(c.bus.ReadROM(addr))))
 	case absoluteX:
 		lower := c.Next()
 		upper := c.Next()
 		addr := c.convertValue(upper, lower) + uint16(c.register.X)
-		return uint16(c.source[c.source[addr]])
+		return uint16(c.bus.ReadROM(uint16(c.bus.ReadROM(addr))))
 	case absoluteY:
 		lower := c.Next()
 		upper := c.Next()
 		addr := c.convertValue(upper, lower) + uint16(c.register.Y)
-		return uint16(c.source[c.source[addr]])
+		return uint16(c.bus.ReadROM(uint16(c.bus.ReadROM(addr))))
 	case indirect:
 	case indirectX:
 	case indirectY:
@@ -236,12 +239,12 @@ func (c *CPU) convertValue(upper, lower byte) uint16 {
 	return uint16(upper)<<8 | uint16(lower)
 }
 
-func New(source []byte) Executor {
+func New(bus *bus.Bus) Executor {
 	return &CPU{
 		register: &Register{
 			PC: 0,
 			P:  &StatusRegister{},
 		},
-		source: source,
+		bus: bus,
 	}
 }

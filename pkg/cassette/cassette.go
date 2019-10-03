@@ -1,4 +1,4 @@
-package cassettie
+package cassette
 
 import (
 	"encoding/binary"
@@ -54,17 +54,17 @@ func (i *iNESHeader) validate() error {
 	return nil
 }
 
-type Cassettie struct {
+type Cassette struct {
 	header *iNESHeader
 	prg    *memory.ROM
 	chr    *memory.ROM
 }
 
-func (c *Cassettie) ProgramROM() *memory.ROM {
+func (c *Cassette) ProgramROM() *memory.ROM {
 	return c.prg
 }
 
-func (c *Cassettie) CharacterROM() *memory.ROM {
+func (c *Cassette) CharacterROM() *memory.ROM {
 	return c.chr
 }
 
@@ -85,7 +85,7 @@ func newHeader(path string) (*iNESHeader, error) {
 	return &header, nil
 }
 
-func New(path string) (*Cassettie, error) {
+func New(path string) (*Cassette, error) {
 	header, err := newHeader(path)
 	if err != nil {
 		return nil, errors.WithStack(err)
@@ -97,7 +97,7 @@ func New(path string) (*Cassettie, error) {
 	prg := data[headerSize : headerSize+int(header.SizePRG)*prgROMSize]
 	chr := data[len(prg) : len(prg)+int(header.SizeCHR)*chrROMSize]
 
-	return &Cassettie{
+	return &Cassette{
 		header: header,
 		prg:    memory.NewROM(prg),
 		chr:    memory.NewROM(chr),

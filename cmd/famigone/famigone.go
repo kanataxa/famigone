@@ -6,11 +6,11 @@ import (
 	"path/filepath"
 
 	"github.com/kanataxa/famigone/pkg/bus"
-	"github.com/kanataxa/famigone/pkg/cassettie"
+	"github.com/kanataxa/famigone/pkg/cassette"
 )
 
 func main() {
-	c, err := cassettie.New(filepath.Join("testdata", "hello_world.nes"))
+	c, err := cassette.New(filepath.Join("testdata", "hello_world.nes"))
 	if err != nil {
 		log.Fatal(err)
 	}

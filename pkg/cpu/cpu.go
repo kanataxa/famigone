@@ -172,14 +172,16 @@ func (c *CPU) JSR() {
 }
 
 func (c *CPU) JMP() {
-	c.register.PC = c.addressingValue()
+	v := c.addressingValue()
+	fmt.Println("c.addressingValue()", v)
+	c.register.jump(v)
 }
 
 func (c *CPU) BPL() {
 	if c.register.P.N {
 		return
 	}
-	c.register.PC = c.addressingValue()
+	c.register.branch(c.addressingValue())
 }
 
 func (c *CPU) CLC() {

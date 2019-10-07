@@ -1,6 +1,8 @@
 package cpu
 
-import "github.com/kanataxa/famigone/pkg/bus"
+import (
+	"github.com/kanataxa/famigone/pkg/bus"
+)
 
 type Register struct {
 	A  uint8
@@ -23,8 +25,9 @@ type StatusRegister struct {
 }
 
 func NewRegister(bus *bus.Bus) *Register {
+	rom := bus.ROM()
 	return &Register{
-		PC: uint16(bus.Read(uint16(bus.ROMSize()-3)))<<8 | uint16(bus.Read(uint16(bus.ROMSize()-4))),
+		PC: uint16(rom.Read(uint16(rom.Size()-3)))<<8 | uint16(rom.Read(uint16(rom.Size()-4))),
 		P:  &StatusRegister{},
 	}
 }

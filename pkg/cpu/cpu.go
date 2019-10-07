@@ -123,7 +123,7 @@ func (c *CPU) Next() byte {
 
 func (c *CPU) HasNext() bool {
 	// TODO: Control PC, 0x8000 or 0xC000
-	return c.bus.ROMSize() > int(c.Pos())+1-0x8000
+	return c.bus.ROM().Size() > int(c.Pos())+1-0x8000
 }
 
 func (c *CPU) LDA() {

@@ -1,8 +1,6 @@
 package bus
 
 import (
-	"fmt"
-
 	"github.com/kanataxa/famigone/pkg/cassette"
 	"github.com/kanataxa/famigone/pkg/memory"
 )
@@ -16,7 +14,6 @@ type Bus struct {
 
 // See: https://wiki.nesdev.com/w/index.php/Mirroring
 func (b *Bus) Read(addr uint16) byte {
-	fmt.Printf("READ: %04x\n", addr)
 	if addr < 0x0800 {
 		return b.wram.Read(addr)
 	} else if addr < 0x2000 {
@@ -46,8 +43,8 @@ func (b *Bus) Read(addr uint16) byte {
 	}
 }
 
-func (b *Bus) ROMSize() int {
-	return b.rom.Size()
+func (b *Bus) ROM() *memory.ROM {
+	return b.rom
 }
 
 func (b *Bus) Write(addr uint16, val byte) {

@@ -21,10 +21,10 @@ func (c *CPU) Pos() uint16 {
 
 func (c *CPU) Exec() error {
 	for c.HasNext() {
-		fmt.Println(Lookup(c.Current()))
+		fmt.Println(c.register.PC, Lookup(c.Current()))
 		c.operate(Lookup(c.Current()))
 
-		fmt.Printf("%x\n", c.bus.ReadROM(c.Pos()))
+		fmt.Printf("%x\n", c.bus.Read(c.Pos()))
 	}
 	return nil
 }
@@ -77,6 +77,7 @@ func (c *CPU) operate(op *Operator) {
 	case pla:
 	case plp:
 	case jmp:
+		c.JMP()
 	case jsr:
 	//c.operate(Lookup(c.source[]))
 	case rts:
@@ -87,6 +88,7 @@ func (c *CPU) operate(op *Operator) {
 	case bmi:
 	case bne:
 	case bpl:
+		c.BPL()
 	case bvc:
 	case bvs:
 	case clc:
@@ -111,16 +113,17 @@ func (c *CPU) operate(op *Operator) {
 }
 
 func (c *CPU) Current() byte {
-	return c.bus.ReadROM(c.register.PC)
+	return c.bus.Read(c.register.PC)
 }
 
 func (c *CPU) Next() byte {
 	c.register.PC++
-	return c.bus.ReadROM(c.register.PC)
+	return c.bus.Read(c.register.PC)
 }
 
 func (c *CPU) HasNext() bool {
-	return c.bus.ROMSize() > int(c.Pos())+1
+	// TODO: Control PC, 0x8000 or 0xC000
+	return c.bus.ROMSize() > int(c.Pos())+1-0x8000
 }
 
 func (c *CPU) LDA() {
@@ -168,6 +171,17 @@ func (c *CPU) TYA() {
 func (c *CPU) JSR() {
 }
 
+func (c *CPU) JMP() {
+	c.register.PC = c.addressingValue()
+}
+
+func (c *CPU) BPL() {
+	if c.register.P.N {
+		return
+	}
+	c.register.PC = c.addressingValue()
+}
+
 func (c *CPU) CLC() {
 	c.register.P.C = false
 }
@@ -209,24 +223,25 @@ func (c *CPU) addressingValue() uint16 {
 	case zeropageX:
 		return uint16(c.Next())
 	case zeropageY:
-		return uint16(c.bus.ReadROM(uint16(c.Next()) + uint16(c.register.Y)))
+		return uint16(c.bus.Read(uint16(c.Next()) + uint16(c.register.Y)))
 	case relative:
-		return uint16(c.bus.ReadROM(uint16(c.Next()) + c.Pos()))
+		c.Next()
+		return c.Pos() + uint16(c.Next()) - 1
 	case absolute:
 		lower := c.Next()
 		upper := c.Next()
 		addr := c.convertValue(upper, lower)
-		return uint16(c.bus.ReadROM(uint16(c.bus.ReadROM(addr))))
+		return uint16(c.bus.Read(uint16(c.bus.Read(addr))))
 	case absoluteX:
 		lower := c.Next()
 		upper := c.Next()
 		addr := c.convertValue(upper, lower) + uint16(c.register.X)
-		return uint16(c.bus.ReadROM(uint16(c.bus.ReadROM(addr))))
+		return uint16(c.bus.Read(uint16(c.bus.Read(addr))))
 	case absoluteY:
 		lower := c.Next()
 		upper := c.Next()
 		addr := c.convertValue(upper, lower) + uint16(c.register.Y)
-		return uint16(c.bus.ReadROM(uint16(c.bus.ReadROM(addr))))
+		return uint16(c.bus.Read(uint16(c.bus.Read(addr))))
 	case indirect:
 	case indirectX:
 	case indirectY:

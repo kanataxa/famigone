@@ -241,10 +241,7 @@ func (c *CPU) convertValue(upper, lower byte) uint16 {
 
 func New(bus *bus.Bus) Executor {
 	return &CPU{
-		register: &Register{
-			PC: 0,
-			P:  &StatusRegister{},
-		},
-		bus: bus,
+		register: NewRegister(bus),
+		bus:      bus,
 	}
 }

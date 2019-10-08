@@ -1,17 +1,18 @@
 package cpu
 
 import (
+	"fmt"
+
 	"github.com/kanataxa/famigone/pkg/bus"
 )
 
 type Register struct {
-	A    uint8
-	X    uint8
-	Y    uint8
-	S    uint8
-	P    *StatusRegister
-	PC   uint16
-	head uint16
+	A  uint8
+	X  uint8
+	Y  uint8
+	S  uint8
+	P  *StatusRegister
+	PC uint16
 }
 
 type StatusRegister struct {
@@ -25,20 +26,19 @@ type StatusRegister struct {
 	C bool
 }
 
-func NewRegister(bus *bus.Bus) *Register {
-	rom := bus.ROM()
-	head := uint16(rom.Read(uint16(rom.Size()-3)))<<8 | uint16(rom.Read(uint16(rom.Size()-4)))
+func NewRegister(bus bus.Bus) *Register {
+	head := uint16(bus.Read(0xFFFD))<<8 | uint16(bus.Read(uint16(0xFFFC)))
 	return &Register{
-		head: head,
-		PC:   head,
-		P:    &StatusRegister{},
+		PC: head,
+		P:  &StatusRegister{},
 	}
 }
 
 func (r *Register) branch(addr uint16) {
-	r.PC = addr
+	r.jump(addr)
 }
 
 func (r *Register) jump(addr uint16) {
-	r.PC = r.head + addr
+	fmt.Printf("JMP:  [%04x]\n", addr)
+	r.PC = addr
 }

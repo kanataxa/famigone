@@ -4,6 +4,9 @@ import (
 	"log"
 	"path/filepath"
 
+	"github.com/kanataxa/famigone/pkg/ppu"
+	"github.com/kanataxa/famigone/pkg/runner"
+
 	"github.com/kanataxa/famigone/pkg/bus"
 	"github.com/kanataxa/famigone/pkg/cassette"
 	"github.com/kanataxa/famigone/pkg/cpu"
@@ -15,8 +18,8 @@ func main() {
 		log.Fatal(err)
 	}
 
-	b := bus.New(c)
-	e := cpu.New(b)
+	b := bus.NewCPUBus(c)
+	cp := cpu.New(b)
 
-	e.Exec()
+	runner.New(cp, &ppu.PPU{}).Run()
 }

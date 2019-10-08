@@ -2,28 +2,24 @@ package cpu
 
 import (
 	"fmt"
+	"time"
 
 	"github.com/kanataxa/famigone/pkg/bus"
 )
 
 type CPU struct {
 	register *Register
-	bus      *bus.Bus
-}
-
-type Executor interface {
-	Exec() error
+	bus      bus.Bus
 }
 
 func (c *CPU) Pos() uint16 {
 	return c.register.PC
 }
 
-func (c *CPU) Exec() error {
-	for c.HasNext() {
-		fmt.Println(c.register.PC, Lookup(c.Current()))
+func (c *CPU) Run() error {
+	for {
+		fmt.Printf("%04x  %s\n", c.register.PC, Lookup(c.Current()))
 		c.operate(Lookup(c.Current()))
-
 		fmt.Printf("%x\n", c.bus.Read(c.Pos()))
 	}
 	return nil
@@ -119,11 +115,6 @@ func (c *CPU) Current() byte {
 func (c *CPU) Next() byte {
 	c.register.PC++
 	return c.bus.Read(c.register.PC)
-}
-
-func (c *CPU) HasNext() bool {
-	// TODO: Control PC, 0x8000 or 0xC000
-	return c.bus.ROM().Size() > int(c.Pos())+1-0x8000
 }
 
 func (c *CPU) LDA() {
@@ -233,7 +224,10 @@ func (c *CPU) addressingValue() uint16 {
 		lower := c.Next()
 		upper := c.Next()
 		addr := c.convertValue(upper, lower)
-		return uint16(c.bus.Read(uint16(c.bus.Read(addr))))
+		fmt.Printf("%02x %02x\n", upper, lower)
+		fmt.Println(uint16(c.bus.Read(addr)))
+		time.Sleep(time.Second * 2)
+		return uint16(c.bus.Read(addr))
 	case absoluteX:
 		lower := c.Next()
 		upper := c.Next()
@@ -256,7 +250,7 @@ func (c *CPU) convertValue(upper, lower byte) uint16 {
 	return uint16(upper)<<8 | uint16(lower)
 }
 
-func New(bus *bus.Bus) Executor {
+func New(bus bus.Bus) *CPU {
 	return &CPU{
 		register: NewRegister(bus),
 		bus:      bus,

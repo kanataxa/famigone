@@ -17,11 +17,12 @@ func (c *CPU) Pos() uint16 {
 }
 
 func (c *CPU) Run() error {
-	for {
-		fmt.Printf("%04x  %s\n", c.register.PC, Lookup(c.Current()))
-		c.operate(Lookup(c.Current()))
-		fmt.Printf("%x\n", c.bus.Read(c.Pos()))
-	}
+	fmt.Printf("%04x  %s\n", c.register.PC, Lookup(c.Current()))
+	c.operate(Lookup(c.Current()))
+
+	fmt.Printf("%x\n", c.bus.Read(c.Pos()))
+	time.Sleep(time.Second * 2)
+
 	return nil
 }
 
@@ -212,11 +213,11 @@ func (c *CPU) addressingValue() uint16 {
 	case immediate:
 		return uint16(c.Next())
 	case zeropage:
-		return uint16(c.Next())
+		return c.val(uint16(c.Next()))
 	case zeropageX:
-		return uint16(c.Next())
+		return c.val(uint16(c.Next()) + uint16(c.register.X))
 	case zeropageY:
-		return uint16(c.bus.Read(uint16(c.Next()) + uint16(c.register.Y)))
+		return c.val(uint16(c.Next()) + uint16(c.register.Y))
 	case relative:
 		c.Next()
 		return c.Pos() + uint16(c.Next()) - 1
@@ -224,10 +225,9 @@ func (c *CPU) addressingValue() uint16 {
 		lower := c.Next()
 		upper := c.Next()
 		addr := c.convertValue(upper, lower)
-		fmt.Printf("%02x %02x\n", upper, lower)
+		fmt.Printf("%02x %02x %d\n", upper, lower, addr)
 		fmt.Println(uint16(c.bus.Read(addr)))
-		time.Sleep(time.Second * 2)
-		return uint16(c.bus.Read(addr))
+		return uint16(c.val(addr))
 	case absoluteX:
 		lower := c.Next()
 		upper := c.Next()
@@ -244,6 +244,10 @@ func (c *CPU) addressingValue() uint16 {
 	}
 
 	return 0
+}
+
+func (c *CPU) val(address uint16) uint16 {
+	return uint16(c.bus.Read(address))
 }
 
 func (c *CPU) convertValue(upper, lower byte) uint16 {

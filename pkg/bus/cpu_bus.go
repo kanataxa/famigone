@@ -45,12 +45,34 @@ func (b *CPUBus) Read(addr uint16) byte {
 	}
 }
 
-func (b *CPUBus) ROM() *cassette.Cassette {
-	return b.Cassette
-}
-
 func (b *CPUBus) Write(addr uint16, val byte) {
-	b.wram.Write(addr, val)
+	if addr < 0x0800 {
+		b.wram.Write(addr, val)
+	} else if addr < 0x2000 {
+		// mirror address
+		b.wram.Write(addr-0x0800, val)
+	} else if addr < 0x4000 {
+		// mirror address
+		b.ppu.Write((addr-0x2000)%8, val)
+	} else if addr < 0x4020 {
+		// apu and i/o register
+		// TODO: implements
+		return
+	} else if addr < 0x6000 {
+		// extends ROM
+		return
+	} else if addr < 0x8000 {
+		// extends RAM
+		return
+	} else if addr < 0xC000 {
+		return
+	} else {
+		// smaller than 16kb, start 0xC000
+		if b.ProgramROM().Size() <= 0x4000 {
+			return
+		}
+		return
+	}
 }
 
 func NewCPUBus(c *cassette.Cassette) Bus {

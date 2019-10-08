@@ -6,7 +6,7 @@ type PPU struct {
 	ram memory.RAM
 }
 
-func (p *PPU) Write() {
+func (p *PPU) Write(addr, val uint16) {
 
 }
 

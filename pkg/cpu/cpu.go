@@ -120,19 +120,16 @@ func (c *CPU) Next() byte {
 
 func (c *CPU) LDA() {
 	val := c.addressingValue()
-	fmt.Println("value", val)
 	c.register.A = uint8(val)
 }
 
 func (c *CPU) LDX() {
 	val := c.addressingValue()
-	fmt.Println("value", val)
 	c.register.X = uint8(val)
 }
 
 func (c *CPU) STA() {
 	val := c.addressingValue()
-	fmt.Println("value", val)
 	c.bus.Write(val, c.register.A)
 }
 
@@ -165,7 +162,6 @@ func (c *CPU) JSR() {
 
 func (c *CPU) JMP() {
 	v := c.addressingValue()
-	fmt.Println("c.addressingValue()", v)
 	c.register.jump(v)
 }
 
@@ -211,43 +207,38 @@ func (c *CPU) addressingValue() uint16 {
 	case accumulator:
 		return uint16(c.register.A)
 	case immediate:
-		return uint16(c.Next())
-	case zeropage:
-		return c.val(uint16(c.Next()))
-	case zeropageX:
-		return c.val(uint16(c.Next()) + uint16(c.register.X))
-	case zeropageY:
-		return c.val(uint16(c.Next()) + uint16(c.register.Y))
-	case relative:
 		c.Next()
-		return c.Pos() + uint16(c.Next()) - 1
+		return c.Pos()
+	case zeropage:
+		return uint16(c.Next())
+	case zeropageX:
+		return uint16(c.Next()) + uint16(c.register.X)&0xFF
+	case zeropageY:
+		return uint16(c.Next()) + uint16(c.register.Y)&0xFF
+	case relative:
+		offset := uint16(c.Next())
+		if offset < 0x80 {
+			return c.Pos() + offset + 1
+		}
+		return c.Pos() + offset + 1 - 0x100
 	case absolute:
 		lower := c.Next()
 		upper := c.Next()
-		addr := c.convertValue(upper, lower)
-		fmt.Printf("%02x %02x %d\n", upper, lower, addr)
-		fmt.Println(uint16(c.bus.Read(addr)))
-		return uint16(c.val(addr))
+		return c.convertValue(upper, lower)
 	case absoluteX:
 		lower := c.Next()
 		upper := c.Next()
-		addr := c.convertValue(upper, lower) + uint16(c.register.X)
-		return uint16(c.bus.Read(uint16(c.bus.Read(addr))))
+		return c.convertValue(upper, lower) + uint16(c.register.X)
 	case absoluteY:
 		lower := c.Next()
 		upper := c.Next()
-		addr := c.convertValue(upper, lower) + uint16(c.register.Y)
-		return uint16(c.bus.Read(uint16(c.bus.Read(addr))))
+		return c.convertValue(upper, lower) + uint16(c.register.Y)
 	case indirect:
 	case indirectX:
 	case indirectY:
 	}
 
 	return 0
-}
-
-func (c *CPU) val(address uint16) uint16 {
-	return uint16(c.bus.Read(address))
 }
 
 func (c *CPU) convertValue(upper, lower byte) uint16 {

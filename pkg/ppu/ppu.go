@@ -1,12 +1,17 @@
 package ppu
 
-import "github.com/kanataxa/famigone/pkg/memory"
+import (
+	"fmt"
+
+	"github.com/kanataxa/famigone/pkg/memory"
+)
 
 type PPU struct {
 	ram memory.RAM
 }
 
-func (p *PPU) Write(addr, val uint16) {
+func (p *PPU) Write(addr uint16, val byte) {
+	fmt.Println("PPU****", addr, val)
 
 }
 

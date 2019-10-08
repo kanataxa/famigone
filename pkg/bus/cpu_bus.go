@@ -1,6 +1,8 @@
 package bus
 
 import (
+	"fmt"
+
 	"github.com/kanataxa/famigone/pkg/cassette"
 	"github.com/kanataxa/famigone/pkg/memory"
 	"github.com/kanataxa/famigone/pkg/ppu"
@@ -46,6 +48,8 @@ func (b *CPUBus) Read(addr uint16) byte {
 }
 
 func (b *CPUBus) Write(addr uint16, val byte) {
+	fmt.Printf("WRITE **** %04x %d\n", addr, val)
+
 	if addr < 0x0800 {
 		b.wram.Write(addr, val)
 	} else if addr < 0x2000 {

@@ -2,7 +2,6 @@ package cpu
 
 import (
 	"fmt"
-	"time"
 
 	"github.com/kanataxa/famigone/pkg/bus"
 )
@@ -21,7 +20,6 @@ func (c *CPU) Run() error {
 	c.operate(Lookup(c.Current()))
 
 	fmt.Printf("%x\n", c.bus.Read(c.Pos()))
-	time.Sleep(time.Second * 2)
 
 	return nil
 }

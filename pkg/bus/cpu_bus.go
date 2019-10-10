@@ -57,7 +57,7 @@ func (b *CPUBus) Write(addr uint16, val byte) {
 		b.wram.Write(addr-0x0800, val)
 	} else if addr < 0x4000 {
 		// mirror address
-		b.ppu.Write((addr-0x2000)%8, val)
+		b.ppu.Write(addr%8+0x2000, val)
 	} else if addr < 0x4020 {
 		// apu and i/o register
 		// TODO: implements
@@ -79,9 +79,10 @@ func (b *CPUBus) Write(addr uint16, val byte) {
 	}
 }
 
-func NewCPUBus(c *cassette.Cassette) Bus {
+func NewCPUBus(c *cassette.Cassette, p *ppu.PPU) Bus {
 	return &CPUBus{
 		Cassette: c,
 		wram:     memory.RAM{},
+		ppu:      p,
 	}
 }

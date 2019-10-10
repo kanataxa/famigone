@@ -18,8 +18,9 @@ func main() {
 		log.Fatal(err)
 	}
 
-	b := bus.NewCPUBus(c)
+	p := ppu.New()
+	b := bus.NewCPUBus(c, p)
 	cp := cpu.New(b)
 
-	runner.New(cp, &ppu.PPU{}).Run()
+	runner.New(cp, p).Run()
 }

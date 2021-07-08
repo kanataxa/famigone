@@ -84,15 +84,26 @@ func (c *CPU) operate(op *Operator) {
 	case rts:
 	case rti:
 	case bcc:
+		if c.BCC() {
+			return
+		}
 	case bcs:
 		if c.BCS() {
 			return
 		}
 	case beq:
+		if c.BEQ() {
+			return
+		}
 	case bmi:
 	case bne:
+		if c.BNE() {
+			return
+		}
 	case bpl:
-		c.BPL()
+		if c.BPL() {
+			return
+		}
 	case bvc:
 	case bvs:
 	case clc:
@@ -128,6 +139,7 @@ func (c *CPU) Next() byte {
 func (c *CPU) LDA() {
 	val := c.addressingValue()
 	c.register.A = uint8(val)
+	c.register.P.Z = val == 0
 }
 
 func (c *CPU) LDX() {
@@ -180,21 +192,49 @@ func (c *CPU) JSR() {
 	c.register.jump(v)
 }
 
-func (c *CPU) BCS() bool {
-	if !c.register.P.C {
+func (c *CPU) BCC() bool {
+	v := c.addressingValue()
+	if c.register.P.C {
 		return false
 	}
-	v := c.addressingValue()
 	c.register.branch(v)
 	return true
 }
 
-func (c *CPU) BPL() {
-	if c.register.P.N {
-		return
-	}
+func (c *CPU) BCS() bool {
 	v := c.addressingValue()
+	if !c.register.P.C {
+		return false
+	}
 	c.register.branch(v)
+	return true
+}
+
+func (c *CPU) BEQ() bool {
+	v := c.addressingValue()
+	if !c.register.P.Z {
+		return false
+	}
+	c.register.branch(v)
+	return true
+}
+
+func (c *CPU) BNE() bool {
+	v := c.addressingValue()
+	if c.register.P.Z {
+		return false
+	}
+	c.register.branch(v)
+	return true
+}
+
+func (c *CPU) BPL() bool {
+	v := c.addressingValue()
+	if c.register.P.N {
+		return false
+	}
+	c.register.branch(v)
+	return true
 }
 
 func (c *CPU) CLC() {

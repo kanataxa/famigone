@@ -1,14 +1,13 @@
 package cpu
 
 import (
-	"fmt"
-
 	"github.com/kanataxa/famigone/pkg/bus"
 )
 
 type CPU struct {
 	register *Register
 	bus      bus.Bus
+	stack    uint16
 }
 
 func (c *CPU) Pos() uint16 {
@@ -16,11 +15,12 @@ func (c *CPU) Pos() uint16 {
 }
 
 func (c *CPU) Run() error {
-	fmt.Println("----RUN----")
-	fmt.Printf("%04x  %s\n", c.register.PC, Lookup(c.Current()))
+	//	fmt.Println("----RUN----")
+	//	fmt.Printf("%04x  %s\n", c.register.PC, Lookup(c.Current()))
 	c.operate(Lookup(c.Current()))
 
-	fmt.Printf("%x\n", c.bus.Read(c.Pos()))
+	//	fmt.Printf("TEST RESULT: [%x]\n", c.bus.Read(0xc002))
+	//	fmt.Printf("TEST RESULT: [%x]\n", c.bus.Read(0xc003))
 
 	return nil
 }
@@ -36,6 +36,7 @@ func (c *CPU) operate(op *Operator) {
 	case sta:
 		c.STA()
 	case stx:
+		c.STX()
 	case sty:
 	case tax:
 		c.TAX()
@@ -74,12 +75,19 @@ func (c *CPU) operate(op *Operator) {
 	case plp:
 	case jmp:
 		c.JMP()
+		// don't call Next()
+		return
 	case jsr:
-	//c.operate(Lookup(c.source[]))
+		c.JSR()
+		// don't call Next()
+		return
 	case rts:
 	case rti:
 	case bcc:
 	case bcs:
+		if c.BCS() {
+			return
+		}
 	case beq:
 	case bmi:
 	case bne:
@@ -132,6 +140,11 @@ func (c *CPU) STA() {
 	c.bus.Write(val, c.register.A)
 }
 
+func (c *CPU) STX() {
+	val := c.addressingValue()
+	c.bus.Write(val, c.register.X)
+}
+
 func (c *CPU) TAX() {
 	c.register.X = c.register.A
 }
@@ -156,19 +169,32 @@ func (c *CPU) TYA() {
 	c.register.A = c.register.Y
 }
 
-func (c *CPU) JSR() {
-}
-
 func (c *CPU) JMP() {
 	v := c.addressingValue()
 	c.register.jump(v)
+}
+
+func (c *CPU) JSR() {
+	c.stack = c.register.PC + 2
+	v := c.addressingValue()
+	c.register.jump(v)
+}
+
+func (c *CPU) BCS() bool {
+	if !c.register.P.C {
+		return false
+	}
+	v := c.addressingValue()
+	c.register.branch(v)
+	return true
 }
 
 func (c *CPU) BPL() {
 	if c.register.P.N {
 		return
 	}
-	c.register.branch(c.addressingValue())
+	v := c.addressingValue()
+	c.register.branch(v)
 }
 
 func (c *CPU) CLC() {
@@ -207,7 +233,7 @@ func (c *CPU) addressingValue() uint16 {
 		return uint16(c.register.A)
 	case immediate:
 		c.Next()
-		return c.Pos()
+		return uint16(c.Current())
 	case zeropage:
 		return uint16(c.Next())
 	case zeropageX:

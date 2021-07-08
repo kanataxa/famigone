@@ -47,7 +47,7 @@ func (nr *NESRunner) Layout(outsideWidth, outsideHeight int) (screenWidth, scree
 
 func (nr *NESRunner) Update() error {
 	nr.cpu.Run()
-	nr.ppu.Run()
+	//nr.ppu.Run()
 	return nil
 }
 

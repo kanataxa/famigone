@@ -8,7 +8,8 @@ import (
 )
 
 func main() {
-	runner, err := runner.New(filepath.Join("testdata", "hello_world.nes"))
+
+	runner, err := runner.New(filepath.Join("testdata", "nestest.nes"))
 	if err != nil {
 		log.Fatal(err)
 	}

@@ -48,7 +48,7 @@ func (b *CPUBus) Read(addr uint16) byte {
 }
 
 func (b *CPUBus) Write(addr uint16, val byte) {
-	fmt.Printf("WRITE **** %04x %d\n", addr, val)
+	fmt.Printf("WRITE: %04x = %d\n", addr, val)
 
 	if addr < 0x0800 {
 		b.wram.Write(addr, val)
@@ -79,7 +79,7 @@ func (b *CPUBus) Write(addr uint16, val byte) {
 	}
 }
 
-func NewCPUBus(c *cassette.Cassette, p *ppu.PPU) Bus {
+func NewCPUBus(c *cassette.Cassette, p *ppu.PPU) *CPUBus {
 	return &CPUBus{
 		Cassette: c,
 		wram:     memory.RAM{},

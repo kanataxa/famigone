@@ -1,8 +1,6 @@
 package cpu
 
 import (
-	"fmt"
-
 	"github.com/kanataxa/famigone/pkg/bus"
 )
 
@@ -39,6 +37,6 @@ func (r *Register) branch(addr uint16) {
 }
 
 func (r *Register) jump(addr uint16) {
-	fmt.Printf("JMP:  [%04x]\n", addr)
+	//fmt.Printf("JMP:  [%04x]\n", addr)
 	r.PC = addr
 }

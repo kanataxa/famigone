@@ -16,6 +16,7 @@ func (c *CPU) Pos() uint16 {
 }
 
 func (c *CPU) Run() error {
+	fmt.Println("----RUN----")
 	fmt.Printf("%04x  %s\n", c.register.PC, Lookup(c.Current()))
 	c.operate(Lookup(c.Current()))
 

@@ -2,8 +2,6 @@ package ppu
 
 import (
 	"fmt"
-	"time"
-
 	"github.com/kanataxa/famigone/pkg/memory"
 )
 
@@ -60,8 +58,7 @@ func (p *PPU) Write(addr uint16, val byte) {
 
 	}
 	fmt.Printf("PPU**** 0x%04x, 0x%04x 0b%08b \n", addr, val, val)
-	time.Sleep(time.Second * 3)
-
+	//time.Sleep(time.Second * 3)
 }
 
 func (p *PPU) Read(addr uint16) byte { return 0 }

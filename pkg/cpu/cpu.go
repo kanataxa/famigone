@@ -16,7 +16,7 @@ func (c *CPU) Pos() uint16 {
 
 func (c *CPU) Run() error {
 	//	fmt.Println("----RUN----")
-	//	fmt.Printf("%04x  %s\n", c.register.PC, Lookup(c.Current()))
+	//fmt.Printf("%04x  %s\n", c.register.PC, Lookup(c.Current()))
 	c.operate(Lookup(c.Current()))
 
 	//	fmt.Printf("TEST RESULT: [%x]\n", c.bus.Read(0xc002))
@@ -54,6 +54,7 @@ func (c *CPU) operate(op *Operator) {
 	case and:
 	case asl:
 	case bit:
+		c.BIT()
 	case cmp:
 	case cpx:
 	case cpy:
@@ -105,7 +106,13 @@ func (c *CPU) operate(op *Operator) {
 			return
 		}
 	case bvc:
+		if c.BVC() {
+			return
+		}
 	case bvs:
+		if c.BVS() {
+			return
+		}
 	case clc:
 		c.CLC()
 	case cld:
@@ -137,14 +144,17 @@ func (c *CPU) Next() byte {
 }
 
 func (c *CPU) LDA() {
-	val := c.addressingValue()
+	val := uint16(c.bus.Read(c.addressingValue()))
 	c.register.A = uint8(val)
-	c.register.P.Z = val == 0
+	c.register.SetZ(val)
+	c.register.SetN(val)
 }
 
 func (c *CPU) LDX() {
-	val := c.addressingValue()
+	val := uint16(c.bus.Read(c.addressingValue()))
 	c.register.X = uint8(val)
+	c.register.SetZ(val)
+	c.register.SetN(val)
 }
 
 func (c *CPU) STA() {
@@ -181,13 +191,21 @@ func (c *CPU) TYA() {
 	c.register.A = c.register.Y
 }
 
+func (c *CPU) BIT() {
+	val := c.bus.Read(c.addressingValue())
+	a := c.register.A
+	c.register.SetZ(uint16(a & val))
+	c.register.SetN(uint16(val))
+	c.register.P.V = (val & 0x40) != 0
+}
+
 func (c *CPU) JMP() {
 	v := c.addressingValue()
 	c.register.jump(v)
 }
 
 func (c *CPU) JSR() {
-	c.stack = c.register.PC + 2
+	//c.register.S = c.register.PC + 2
 	v := c.addressingValue()
 	c.register.jump(v)
 }
@@ -237,6 +255,24 @@ func (c *CPU) BPL() bool {
 	return true
 }
 
+func (c *CPU) BVC() bool {
+	v := c.addressingValue()
+	if c.register.P.V {
+		return false
+	}
+	c.register.branch(v)
+	return true
+}
+
+func (c *CPU) BVS() bool {
+	v := c.addressingValue()
+	if !c.register.P.V {
+		return false
+	}
+	c.register.branch(v)
+	return true
+}
+
 func (c *CPU) CLC() {
 	c.register.P.C = false
 }
@@ -273,7 +309,7 @@ func (c *CPU) addressingValue() uint16 {
 		return uint16(c.register.A)
 	case immediate:
 		c.Next()
-		return uint16(c.Current())
+		return c.register.PC
 	case zeropage:
 		return uint16(c.Next())
 	case zeropageX:

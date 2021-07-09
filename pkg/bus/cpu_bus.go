@@ -10,7 +10,7 @@ import (
 
 type CPUBus struct {
 	*cassette.Cassette
-	wram memory.RAM
+	wram *memory.RAM
 	ppu  *ppu.PPU
 	// apu  memory.RAM
 }
@@ -82,7 +82,7 @@ func (b *CPUBus) Write(addr uint16, val byte) {
 func NewCPUBus(c *cassette.Cassette, p *ppu.PPU) *CPUBus {
 	return &CPUBus{
 		Cassette: c,
-		wram:     memory.RAM{},
+		wram:     memory.NewRAM(),
 		ppu:      p,
 	}
 }

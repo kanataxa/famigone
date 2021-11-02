@@ -43,7 +43,7 @@ func NewRegister(bus bus.Bus) *Register {
 	return &Register{
 		PC: head,
 		P:  &StatusRegister{R: true, I: true},
-		S:  0xFD,
+		S:  0xFF,
 	}
 }
 

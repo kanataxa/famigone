@@ -83,6 +83,7 @@ func (c *CPU) operate(op *Operator) {
 		// don't call Next()
 		return
 	case rts:
+		c.RTS()
 	case rti:
 	case bcc:
 		if c.BCC() {
@@ -205,9 +206,16 @@ func (c *CPU) JMP() {
 }
 
 func (c *CPU) JSR() {
-	//c.register.S = c.register.PC + 2
 	v := c.addressingValue()
+	c.pushStack(uint8(c.register.PC >> 8))
+	c.pushStack(uint8(c.register.PC))
 	c.register.jump(v)
+}
+
+func (c *CPU) RTS() {
+	lower := c.popStack()
+	upper := c.popStack()
+	c.register.jump(c.convertValue(upper, lower))
 }
 
 func (c *CPU) BCC() bool {
@@ -344,6 +352,16 @@ func (c *CPU) addressingValue() uint16 {
 
 func (c *CPU) convertValue(upper, lower byte) uint16 {
 	return uint16(upper)<<8 | uint16(lower)
+}
+
+func (c *CPU) pushStack(val byte) {
+	c.bus.Write(0x0100|uint16(c.register.S), val)
+	c.register.S--
+}
+
+func (c *CPU) popStack() byte {
+	c.register.S++
+	return c.bus.Read(0x0100 | uint16(c.register.S))
 }
 
 func New(bus bus.Bus) *CPU {

@@ -52,10 +52,12 @@ func (c *CPU) operate(op *Operator) {
 		c.TYA()
 	case adc:
 	case and:
+		c.AND()
 	case asl:
 	case bit:
 		c.BIT()
 	case cmp:
+		c.CMP()
 	case cpx:
 	case cpy:
 	case dec:
@@ -72,7 +74,9 @@ func (c *CPU) operate(op *Operator) {
 	case sbc:
 	case pha:
 	case php:
+		c.PHP()
 	case pla:
+		c.PLA()
 	case plp:
 	case jmp:
 		c.JMP()
@@ -192,12 +196,37 @@ func (c *CPU) TYA() {
 	c.register.A = c.register.Y
 }
 
+func (c *CPU) AND() {
+	val := c.bus.Read(c.addressingValue())
+	c.register.A &= val
+	c.register.SetN(uint16(c.register.A))
+	c.register.SetZ(uint16(c.register.A))
+}
+
 func (c *CPU) BIT() {
 	val := c.bus.Read(c.addressingValue())
 	a := c.register.A
 	c.register.SetZ(uint16(a & val))
 	c.register.SetN(uint16(val))
 	c.register.P.V = (val & 0x40) != 0
+}
+
+func (c *CPU) CMP() {
+	val := c.bus.Read(c.addressingValue())
+	result := uint16(c.register.A - val)
+	c.register.SetN(result)
+	c.register.SetZ(result)
+	c.register.P.C = c.register.A >= val
+}
+
+func (c *CPU) PHP() {
+	c.pushStack(c.register.P.Value())
+}
+
+func (c *CPU) PLA() {
+	c.register.A = c.popStack()
+	c.register.SetZ(uint16(c.register.A))
+	c.register.SetN(uint16(c.register.A))
 }
 
 func (c *CPU) JMP() {
@@ -302,7 +331,7 @@ func (c *CPU) SEC() {
 }
 
 func (c *CPU) SED() {
-	// not implements in NES
+	c.register.P.D = true
 }
 
 func (c *CPU) SEI() {

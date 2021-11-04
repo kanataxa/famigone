@@ -42,6 +42,17 @@ func (r *StatusRegister) Value() uint8 {
 	return bit
 }
 
+func (r *StatusRegister) Load(val uint8) {
+	r.C = (val>>0)&1 == 1
+	r.Z = (val>>1)&1 == 1
+	r.I = (val>>2)&1 == 1
+	r.D = (val>>3)&1 == 1
+	r.B = (val>>4)&1 == 1
+	r.R = (val>>5)&1 == 1
+	r.V = (val>>6)&1 == 1
+	r.N = (val>>7)&1 == 1
+}
+
 func NewRegister(bus bus.Bus) *Register {
 	head := uint16(bus.Read(0xFFFD))<<8 | uint16(bus.Read(uint16(0xFFFC)))
 	return &Register{

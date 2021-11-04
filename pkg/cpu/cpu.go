@@ -1,6 +1,8 @@
 package cpu
 
 import (
+	"fmt"
+
 	"github.com/kanataxa/famigone/pkg/bus"
 )
 
@@ -32,12 +34,13 @@ func (c *CPU) operate(op *Operator) {
 	case ldx:
 		c.LDX()
 	case ldy:
-
+		panic(fmt.Sprintln("no impl", op.order))
 	case sta:
 		c.STA()
 	case stx:
 		c.STX()
 	case sty:
+		panic(fmt.Sprintln("no impl", op.order))
 	case tax:
 		c.TAX()
 	case tay:
@@ -51,6 +54,7 @@ func (c *CPU) operate(op *Operator) {
 	case tya:
 		c.TYA()
 	case adc:
+		panic(fmt.Sprintln("no impl", op.order))
 	case and:
 		c.AND()
 	case asl:
@@ -59,25 +63,41 @@ func (c *CPU) operate(op *Operator) {
 	case cmp:
 		c.CMP()
 	case cpx:
+		panic(fmt.Sprintln("no impl", op.order))
 	case cpy:
+		panic(fmt.Sprintln("no impl", op.order))
 	case dec:
+		panic(fmt.Sprintln("no impl", op.order))
 	case dex:
+		panic(fmt.Sprintln("no impl", op.order))
 	case dey:
+		panic(fmt.Sprintln("no impl", op.order))
 	case eor:
+		panic(fmt.Sprintln("no impl", op.order))
 	case inc:
+		panic(fmt.Sprintln("no impl", op.order))
 	case inx:
+		panic(fmt.Sprintln("no impl", op.order))
 	case iny:
+		panic(fmt.Sprintln("no impl", op.order))
 	case lsr:
+		panic(fmt.Sprintln("no impl", op.order))
 	case ora:
+		panic(fmt.Sprintln("no impl", op.order))
 	case rol:
+		panic(fmt.Sprintln("no impl", op.order))
 	case ror:
+		panic(fmt.Sprintln("no impl", op.order))
 	case sbc:
+		panic(fmt.Sprintln("no impl", op.order))
 	case pha:
+		c.PHA()
 	case php:
 		c.PHP()
 	case pla:
 		c.PLA()
 	case plp:
+		c.PLP()
 	case jmp:
 		c.JMP()
 		// don't call Next()
@@ -89,6 +109,7 @@ func (c *CPU) operate(op *Operator) {
 	case rts:
 		c.RTS()
 	case rti:
+		panic(fmt.Sprintln("no impl", op.order))
 	case bcc:
 		if c.BCC() {
 			return
@@ -102,6 +123,7 @@ func (c *CPU) operate(op *Operator) {
 			return
 		}
 	case bmi:
+		panic(fmt.Sprintln("no impl", op.order))
 	case bne:
 		if c.BNE() {
 			return
@@ -133,6 +155,7 @@ func (c *CPU) operate(op *Operator) {
 	case sei:
 		c.SEI()
 	case brk:
+		panic(fmt.Sprintln("no impl", op.order))
 	case nop:
 
 	}
@@ -219,6 +242,10 @@ func (c *CPU) CMP() {
 	c.register.P.C = c.register.A >= val
 }
 
+func (c *CPU) PHA() {
+	c.pushStack(c.register.A)
+}
+
 func (c *CPU) PHP() {
 	c.pushStack(c.register.P.Value())
 }
@@ -227,6 +254,10 @@ func (c *CPU) PLA() {
 	c.register.A = c.popStack()
 	c.register.SetZ(uint16(c.register.A))
 	c.register.SetN(uint16(c.register.A))
+}
+
+func (c *CPU) PLP() {
+	c.register.P.Load(c.popStack())
 }
 
 func (c *CPU) JMP() {
@@ -315,7 +346,7 @@ func (c *CPU) CLC() {
 }
 
 func (c *CPU) CLD() {
-	// not implements in NES
+	c.register.P.D = false
 }
 
 func (c *CPU) CLI() {

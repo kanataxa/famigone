@@ -27,15 +27,19 @@ type StatusRegister struct {
 }
 
 func (r *StatusRegister) String() string {
-	bit := 0
+	return fmt.Sprintf("%02x", r.Value())
+}
+
+func (r *StatusRegister) Value() uint8 {
+	var bit uint8
 	for idx, f := range []bool{
 		r.C, r.Z, r.I, r.D, r.B, r.R, r.V, r.N,
 	} {
 		if f {
-			bit |= 1 << uint(idx)
+			bit |= 1 << uint8(idx)
 		}
 	}
-	return fmt.Sprintf("%02x", bit)
+	return bit
 }
 
 func NewRegister(bus bus.Bus) *Register {
@@ -43,7 +47,7 @@ func NewRegister(bus bus.Bus) *Register {
 	return &Register{
 		PC: head,
 		P:  &StatusRegister{R: true, I: true},
-		S:  0xFF,
+		S:  0xFD,
 	}
 }
 

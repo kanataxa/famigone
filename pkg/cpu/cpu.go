@@ -54,7 +54,7 @@ func (c *CPU) operate(op *Operator) {
 	case tya:
 		c.TYA()
 	case adc:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.ADC()
 	case and:
 		c.AND()
 	case asl:
@@ -73,7 +73,7 @@ func (c *CPU) operate(op *Operator) {
 	case dey:
 		panic(fmt.Sprintln("no impl", op.order))
 	case eor:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.EOR()
 	case inc:
 		panic(fmt.Sprintln("no impl", op.order))
 	case inx:
@@ -83,7 +83,7 @@ func (c *CPU) operate(op *Operator) {
 	case lsr:
 		panic(fmt.Sprintln("no impl", op.order))
 	case ora:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.ORA()
 	case rol:
 		panic(fmt.Sprintln("no impl", op.order))
 	case ror:
@@ -123,7 +123,9 @@ func (c *CPU) operate(op *Operator) {
 			return
 		}
 	case bmi:
-		panic(fmt.Sprintln("no impl", op.order))
+		if c.BMI() {
+			return
+		}
 	case bne:
 		if c.BNE() {
 			return
@@ -219,6 +221,20 @@ func (c *CPU) TYA() {
 	c.register.A = c.register.Y
 }
 
+func (c *CPU) ADC() {
+	val := c.bus.Read(c.addressingValue())
+	var rc uint8
+	if c.register.P.C {
+		rc = 1
+	}
+	result := uint16(c.register.A) + uint16(rc) + uint16(val)
+	c.register.SetN(result)
+	c.register.SetZ(result)
+	c.register.P.C = result > 0xFF
+	c.register.P.V = (c.register.A^rc)&0x80 == 0 && (c.register.A^uint8(result))&0x80 == 0x80
+	c.register.A = uint8(result)
+}
+
 func (c *CPU) AND() {
 	val := c.bus.Read(c.addressingValue())
 	c.register.A &= val
@@ -240,6 +256,20 @@ func (c *CPU) CMP() {
 	c.register.SetN(result)
 	c.register.SetZ(result)
 	c.register.P.C = c.register.A >= val
+}
+
+func (c *CPU) EOR() {
+	val := c.bus.Read(c.addressingValue())
+	c.register.A ^= val
+	c.register.SetN(uint16(c.register.A))
+	c.register.SetZ(uint16(c.register.A))
+}
+
+func (c *CPU) ORA() {
+	val := c.bus.Read(c.addressingValue())
+	c.register.A |= val
+	c.register.SetN(uint16(c.register.A))
+	c.register.SetZ(uint16(c.register.A))
 }
 
 func (c *CPU) PHA() {
@@ -299,6 +329,15 @@ func (c *CPU) BCS() bool {
 func (c *CPU) BEQ() bool {
 	v := c.addressingValue()
 	if !c.register.P.Z {
+		return false
+	}
+	c.register.branch(v)
+	return true
+}
+
+func (c *CPU) BMI() bool {
+	v := c.addressingValue()
+	if !c.register.P.N {
 		return false
 	}
 	c.register.branch(v)

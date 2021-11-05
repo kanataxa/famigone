@@ -48,7 +48,7 @@ func (r *StatusRegister) Load(val uint8) {
 	r.I = (val>>2)&1 == 1
 	r.D = (val>>3)&1 == 1
 	r.B = (val>>4)&1 == 1
-	r.R = (val>>5)&1 == 1
+	//r.R = (val>>5)&1 == 1
 	r.V = (val>>6)&1 == 1
 	r.N = (val>>7)&1 == 1
 }
@@ -67,7 +67,6 @@ func (r *Register) branch(addr uint16) {
 }
 
 func (r *Register) jump(addr uint16) {
-	//fmt.Printf("JMP:  [%04x]\n", addr)
 	r.PC = addr
 }
 

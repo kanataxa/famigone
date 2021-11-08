@@ -227,12 +227,12 @@ func (c *CPU) ADC() {
 	if c.register.P.C {
 		rc = 1
 	}
-	result := uint16(c.register.A) + uint16(rc) + uint16(val)
-	c.register.SetN(result)
-	c.register.SetZ(result)
-	c.register.P.C = result > 0xFF
-	c.register.P.V = (c.register.A^rc)&0x80 == 0 && (c.register.A^uint8(result))&0x80 == 0x80
-	c.register.A = uint8(result)
+	a := c.register.A
+	c.register.A = a + rc + val
+	c.register.SetN(uint16(c.register.A))
+	c.register.SetZ(uint16(c.register.A))
+	c.register.P.C = uint16(a)+uint16(rc)+uint16(val) > 0xFF
+	c.register.P.V = (a^val)&0x80 == 0 && (a^c.register.A)&0x80 != 0
 }
 
 func (c *CPU) AND() {

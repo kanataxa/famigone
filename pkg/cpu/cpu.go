@@ -34,7 +34,7 @@ func (c *CPU) operate(op *Operator) {
 	case ldx:
 		c.LDX()
 	case ldy:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.LDY()
 	case sta:
 		c.STA()
 	case stx:
@@ -63,9 +63,9 @@ func (c *CPU) operate(op *Operator) {
 	case cmp:
 		c.CMP()
 	case cpx:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.CPX()
 	case cpy:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.CPY()
 	case dec:
 		panic(fmt.Sprintln("no impl", op.order))
 	case dex:
@@ -187,6 +187,13 @@ func (c *CPU) LDX() {
 	c.register.SetN(val)
 }
 
+func (c *CPU) LDY() {
+	val := uint16(c.bus.Read(c.addressingValue()))
+	c.register.Y = uint8(val)
+	c.register.SetZ(val)
+	c.register.SetN(val)
+}
+
 func (c *CPU) STA() {
 	val := c.addressingValue()
 	c.bus.Write(val, c.register.A)
@@ -251,11 +258,22 @@ func (c *CPU) BIT() {
 }
 
 func (c *CPU) CMP() {
-	val := c.bus.Read(c.addressingValue())
-	result := uint16(c.register.A - val)
+	c.cp(c.register.A, c.bus.Read(c.addressingValue()))
+}
+
+func (c *CPU) CPX() {
+	c.cp(c.register.X, c.bus.Read(c.addressingValue()))
+}
+
+func (c *CPU) CPY() {
+	c.cp(c.register.Y, c.bus.Read(c.addressingValue()))
+}
+
+func (c *CPU) cp(a, b uint8) {
+	result := uint16(a - b)
 	c.register.SetN(result)
 	c.register.SetZ(result)
-	c.register.P.C = c.register.A >= val
+	c.register.P.C = a >= b
 }
 
 func (c *CPU) EOR() {

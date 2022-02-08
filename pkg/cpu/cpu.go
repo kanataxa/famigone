@@ -69,17 +69,17 @@ func (c *CPU) operate(op *Operator) {
 	case dec:
 		panic(fmt.Sprintln("no impl", op.order))
 	case dex:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.DEX()
 	case dey:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.DEY()
 	case eor:
 		c.EOR()
 	case inc:
 		panic(fmt.Sprintln("no impl", op.order))
 	case inx:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.INX()
 	case iny:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.INY()
 	case lsr:
 		panic(fmt.Sprintln("no impl", op.order))
 	case ora:
@@ -89,7 +89,7 @@ func (c *CPU) operate(op *Operator) {
 	case ror:
 		panic(fmt.Sprintln("no impl", op.order))
 	case sbc:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.SBC()
 	case pha:
 		c.PHA()
 	case php:
@@ -206,18 +206,26 @@ func (c *CPU) STX() {
 
 func (c *CPU) TAX() {
 	c.register.X = c.register.A
+	c.register.SetN(uint16(c.register.X))
+	c.register.SetZ(uint16(c.register.X))
 }
 
 func (c *CPU) TAY() {
 	c.register.Y = c.register.A
+	c.register.SetN(uint16(c.register.Y))
+	c.register.SetZ(uint16(c.register.Y))
 }
 
 func (c *CPU) TSX() {
 	c.register.X = c.register.S
+	c.register.SetN(uint16(c.register.X))
+	c.register.SetZ(uint16(c.register.X))
 }
 
 func (c *CPU) TXA() {
 	c.register.A = c.register.X
+	c.register.SetN(uint16(c.register.A))
+	c.register.SetZ(uint16(c.register.A))
 }
 
 func (c *CPU) TXS() {
@@ -226,6 +234,8 @@ func (c *CPU) TXS() {
 
 func (c *CPU) TYA() {
 	c.register.A = c.register.Y
+	c.register.SetN(uint16(c.register.A))
+	c.register.SetZ(uint16(c.register.A))
 }
 
 func (c *CPU) ADC() {
@@ -283,11 +293,52 @@ func (c *CPU) EOR() {
 	c.register.SetZ(uint16(c.register.A))
 }
 
+func (c *CPU) DEX() {
+	c.register.X--
+	c.register.SetN(uint16(c.register.X))
+	c.register.SetZ(uint16(c.register.X))
+}
+
+func (c *CPU) DEY() {
+	c.register.Y--
+	c.register.SetN(uint16(c.register.Y))
+	c.register.SetZ(uint16(c.register.Y))
+}
+
+func (c *CPU) INX() {
+	c.register.X++
+	c.register.SetN(uint16(c.register.X))
+	c.register.SetZ(uint16(c.register.X))
+}
+
+func (c *CPU) INY() {
+	c.register.Y++
+	c.register.SetN(uint16(c.register.Y))
+	c.register.SetZ(uint16(c.register.Y))
+}
+
 func (c *CPU) ORA() {
 	val := c.bus.Read(c.addressingValue())
 	c.register.A |= val
 	c.register.SetN(uint16(c.register.A))
 	c.register.SetZ(uint16(c.register.A))
+}
+
+func (c *CPU) SBC() {
+	val := c.bus.Read(c.addressingValue())
+	a := c.register.A
+	var carry uint8
+	if !c.register.P.C {
+		carry = 1
+	}
+	c.register.A = a - val - carry
+	c.register.SetN(uint16(c.register.A))
+	c.register.SetZ(uint16(c.register.A))
+
+	// 繰り上がりなし(繰り下がり発生): C=1, 繰り上がり発生(繰り下がりなし): C=0
+	c.register.P.C = int(a)-int(val)-int(carry) >= 0
+	// オーバフローは同符号の時に発生する
+	c.register.P.V = (a^val)&0x80 != 0 && (a^c.register.A)&0x80 != 0
 }
 
 func (c *CPU) PHA() {

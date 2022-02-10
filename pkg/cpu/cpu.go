@@ -40,7 +40,7 @@ func (c *CPU) operate(op *Operator) {
 	case stx:
 		c.STX()
 	case sty:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.STY()
 	case tax:
 		c.TAX()
 	case tay:
@@ -58,6 +58,7 @@ func (c *CPU) operate(op *Operator) {
 	case and:
 		c.AND()
 	case asl:
+		c.ASL()
 	case bit:
 		c.BIT()
 	case cmp:
@@ -67,7 +68,7 @@ func (c *CPU) operate(op *Operator) {
 	case cpy:
 		c.CPY()
 	case dec:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.DEC()
 	case dex:
 		c.DEX()
 	case dey:
@@ -75,19 +76,19 @@ func (c *CPU) operate(op *Operator) {
 	case eor:
 		c.EOR()
 	case inc:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.INC()
 	case inx:
 		c.INX()
 	case iny:
 		c.INY()
 	case lsr:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.LSR()
 	case ora:
 		c.ORA()
 	case rol:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.ROL()
 	case ror:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.ROR()
 	case sbc:
 		c.SBC()
 	case pha:
@@ -109,7 +110,9 @@ func (c *CPU) operate(op *Operator) {
 	case rts:
 		c.RTS()
 	case rti:
-		panic(fmt.Sprintln("no impl", op.order))
+		c.RTI()
+		// don't call Next()
+		return
 	case bcc:
 		if c.BCC() {
 			return
@@ -157,9 +160,11 @@ func (c *CPU) operate(op *Operator) {
 	case sei:
 		c.SEI()
 	case brk:
-		panic(fmt.Sprintln("no impl", op.order))
+		if c.BRK() {
+			return
+		}
 	case nop:
-
+		c.NOP()
 	}
 	c.Next()
 }
@@ -174,7 +179,11 @@ func (c *CPU) Next() byte {
 }
 
 func (c *CPU) LDA() {
-	val := uint16(c.bus.Read(c.addressingValue()))
+	pos := c.register.PC
+	op := Lookup(c.Current())
+	address := c.addressingValue()
+	val := uint16(c.bus.Read(address))
+	fmt.Printf("LDA %04x %s %04x %04x\n", pos, op.addressing, address, val)
 	c.register.A = uint8(val)
 	c.register.SetZ(val)
 	c.register.SetN(val)
@@ -196,12 +205,18 @@ func (c *CPU) LDY() {
 
 func (c *CPU) STA() {
 	val := c.addressingValue()
+	fmt.Printf("STA %04x %04x \n", val, c.register.A)
 	c.bus.Write(val, c.register.A)
 }
 
 func (c *CPU) STX() {
 	val := c.addressingValue()
 	c.bus.Write(val, c.register.X)
+}
+
+func (c *CPU) STY() {
+	val := c.addressingValue()
+	c.bus.Write(val, c.register.Y)
 }
 
 func (c *CPU) TAX() {
@@ -259,6 +274,23 @@ func (c *CPU) AND() {
 	c.register.SetZ(uint16(c.register.A))
 }
 
+func (c *CPU) ASL() {
+	if Lookup(c.Current()).addressing == accumulator {
+		c.register.P.C = c.register.A&0x80 == 0x80
+		c.register.A <<= 1
+		c.register.SetN(uint16(c.register.A))
+		c.register.SetZ(uint16(c.register.A))
+	} else {
+		address := c.addressingValue()
+		val := uint16(c.bus.Read(address))
+		c.register.P.C = val&0x80 == 0x80
+		val <<= 1
+		c.bus.Write(address, uint8(val))
+		c.register.SetN(val)
+		c.register.SetZ(val)
+	}
+}
+
 func (c *CPU) BIT() {
 	val := c.bus.Read(c.addressingValue())
 	a := c.register.A
@@ -293,6 +325,14 @@ func (c *CPU) EOR() {
 	c.register.SetZ(uint16(c.register.A))
 }
 
+func (c *CPU) DEC() {
+	address := c.addressingValue()
+	val := c.bus.Read(address) - 1
+	c.bus.Write(address, val)
+	c.register.SetN(uint16(val))
+	c.register.SetZ(uint16(val))
+}
+
 func (c *CPU) DEX() {
 	c.register.X--
 	c.register.SetN(uint16(c.register.X))
@@ -303,6 +343,14 @@ func (c *CPU) DEY() {
 	c.register.Y--
 	c.register.SetN(uint16(c.register.Y))
 	c.register.SetZ(uint16(c.register.Y))
+}
+
+func (c *CPU) INC() {
+	address := c.addressingValue()
+	val := c.bus.Read(address) + 1
+	c.bus.Write(address, val)
+	c.register.SetN(uint16(val))
+	c.register.SetZ(uint16(val))
 }
 
 func (c *CPU) INX() {
@@ -317,11 +365,70 @@ func (c *CPU) INY() {
 	c.register.SetZ(uint16(c.register.Y))
 }
 
+func (c *CPU) LSR() {
+	if Lookup(c.Current()).addressing == accumulator {
+		c.register.P.C = c.register.A&1 == 1
+		c.register.A >>= 1
+		c.register.SetN(uint16(c.register.A))
+		c.register.SetZ(uint16(c.register.A))
+	} else {
+		address := c.addressingValue()
+		val := uint16(c.bus.Read(address))
+		c.register.P.C = val&1 == 1
+		val >>= 1
+		c.bus.Write(address, uint8(val))
+		c.register.SetN(val)
+		c.register.SetZ(val)
+	}
+}
+
 func (c *CPU) ORA() {
 	val := c.bus.Read(c.addressingValue())
 	c.register.A |= val
 	c.register.SetN(uint16(c.register.A))
 	c.register.SetZ(uint16(c.register.A))
+}
+
+func (c *CPU) ROL() {
+	var cv uint8
+	if c.register.P.C {
+		cv = 1
+	}
+	if Lookup(c.Current()).addressing == accumulator {
+		c.register.P.C = c.register.A&0x80 == 0x80
+		c.register.A = (c.register.A << 1) | cv
+		c.register.SetN(uint16(c.register.A))
+		c.register.SetZ(uint16(c.register.A))
+	} else {
+		address := c.addressingValue()
+		val := c.bus.Read(address)
+		c.register.P.C = val&0x80 == 0x80
+		val = (val << 1) | cv
+		c.bus.Write(address, val)
+		c.register.SetN(uint16(val))
+		c.register.SetZ(uint16(val))
+	}
+}
+
+func (c *CPU) ROR() {
+	var cv uint8
+	if c.register.P.C {
+		cv = 1
+	}
+	if Lookup(c.Current()).addressing == accumulator {
+		c.register.P.C = c.register.A&1 == 1
+		c.register.A = (c.register.A >> 1) | (cv << 7)
+		c.register.SetN(uint16(c.register.A))
+		c.register.SetZ(uint16(c.register.A))
+	} else {
+		address := c.addressingValue()
+		val := c.bus.Read(address)
+		c.register.P.C = val&1 == 1
+		val = (val >> 1) | (cv << 7)
+		c.bus.Write(address, val)
+		c.register.SetN(uint16(val))
+		c.register.SetZ(uint16(val))
+	}
 }
 
 func (c *CPU) SBC() {
@@ -372,6 +479,13 @@ func (c *CPU) JSR() {
 }
 
 func (c *CPU) RTS() {
+	lower := c.popStack()
+	upper := c.popStack()
+	c.register.jump(c.convertValue(upper, lower))
+}
+
+func (c *CPU) RTI() {
+	c.register.P.Load(c.popStack())
 	lower := c.popStack()
 	upper := c.popStack()
 	c.register.jump(c.convertValue(upper, lower))
@@ -477,6 +591,25 @@ func (c *CPU) SEI() {
 	c.register.P.I = true
 }
 
+func (c *CPU) BRK() bool {
+	if c.register.P.I {
+		return false
+	}
+	c.register.P.B = true
+	c.Next()
+	c.pushStack(uint8(c.register.PC) >> 4)
+	c.pushStack(uint8(c.register.PC & 0x0F))
+	c.pushStack(c.register.P.Value())
+	c.register.P.I = true
+	lower := c.bus.Read(0xFFFE)
+	upper := c.bus.Read(0xFFFF)
+	c.register.jump(c.convertValue(upper, lower))
+	return true
+}
+
+func (c *CPU) NOP() {
+}
+
 func (c *CPU) addressingValue() uint16 {
 	op := Lookup(c.Current())
 	switch op.addressing {
@@ -485,13 +618,16 @@ func (c *CPU) addressingValue() uint16 {
 		return uint16(c.register.A)
 	case immediate:
 		c.Next()
+		//fmt.Printf("AD IMMD %04x %04x \n", c.register.PC, c.bus.Read(c.register.PC))
 		return c.register.PC
 	case zeropage:
 		return uint16(c.Next())
 	case zeropageX:
-		return uint16(c.Next()) + uint16(c.register.X)&0xFF
+		lower := c.Next() + c.register.X
+		return c.convertValue(0x00, lower)
 	case zeropageY:
-		return uint16(c.Next()) + uint16(c.register.Y)&0xFF
+		lower := c.Next() + c.register.Y
+		return c.convertValue(0x00, lower)
 	case relative:
 		offset := uint16(c.Next())
 		if offset < 0x80 {
@@ -511,11 +647,29 @@ func (c *CPU) addressingValue() uint16 {
 		upper := c.Next()
 		return c.convertValue(upper, lower) + uint16(c.register.Y)
 	case indirect:
+		lower := c.Next()
+		upper := c.Next()
+		mem := c.convertValue(upper, lower)
+		return c.convertValue(c.bus.Read(c.nextIndirectAddr(mem)), c.bus.Read(mem))
 	case indirectX:
+		address := uint16(c.Next() + c.register.X)
+		lower := c.bus.Read(address)
+		upper := c.bus.Read(c.nextIndirectAddr(address))
+		//fmt.Printf("AD INDIRECT %04x %04x %04x \n", address, upper, lower)
+		return c.convertValue(upper, lower)
 	case indirectY:
+		address := uint16(c.Next())
+		lower := c.bus.Read(address)
+		upper := c.bus.Read(c.nextIndirectAddr(address))
+		//fmt.Printf("AD INDIRECTY %04x %04x %04x %04x %04x\n", address, upper, lower, c.register.Y, c.convertValue(upper, lower)+uint16(c.register.Y))
+		return c.convertValue(upper, lower) + uint16(c.register.Y)
 	}
-
 	return 0
+}
+
+// indirect時に上位はaddress+1となるが、0x02FFを0x0300ではなく0x0200に循環させる
+func (c *CPU) nextIndirectAddr(addr uint16) uint16 {
+	return (addr & 0xFF00) | uint16(uint8(addr)+1)
 }
 
 func (c *CPU) convertValue(upper, lower byte) uint16 {

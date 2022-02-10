@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"runtime/debug"
 	"strings"
 	"testing"
 
@@ -96,6 +97,7 @@ func TestCPU(t *testing.T) {
 	defer func() {
 		if r := recover(); r != nil {
 			fmt.Println(strings.Join(executedLogs, ""))
+			debug.PrintStack()
 			t.Error(r)
 		}
 	}()

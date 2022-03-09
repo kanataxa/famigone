@@ -56,10 +56,17 @@ func parse(t string) *NesTestLog {
 		}
 		tok = append(tok, r)
 	}
-
+	var p string
+	for _, l := range result {
+		if strings.Contains(l, "P:") {
+			p = strings.Split(l, "P:")[1]
+			break
+		}
+	}
 	return &NesTestLog{
 		PC:     result[0],
 		OPCode: result[1],
+		P:      p,
 	}
 }
 
@@ -101,11 +108,13 @@ func TestCPU(t *testing.T) {
 			t.Error(r)
 		}
 	}()
-	for i := 0; ; i++ {
+	for i := 0; i < len(executedLogs); i++ {
 		currentPC := c.register.PC
 		capture := c.register.P.String()
 		op := Lookup(c.Current())
-		c.Run()
+		if err := c.Run(); err != nil {
+			t.Fatal(err)
+		}
 		log := c.Log(op, currentPC, capture)
 		if log.PC != expectedLogs[i].PC {
 			t.Errorf("invalid pc. line: %d expected: %s, but: %s", i, expectedLogs[i].PC, log.PC)
@@ -114,6 +123,11 @@ func TestCPU(t *testing.T) {
 		}
 		if log.OPCode != expectedLogs[i].OPCode {
 			t.Errorf("invalid opcode. line: %d expected: %s, but: %s", i, expectedLogs[i].OPCode, log.OPCode)
+			fmt.Println(strings.Join(executedLogs, ""))
+			return
+		}
+		if log.P != expectedLogs[i].P {
+			t.Errorf("invalid Flags. line: %d expected: %s, but: %s", i, expectedLogs[i].P, log.P)
 			fmt.Println(strings.Join(executedLogs, ""))
 			return
 		}

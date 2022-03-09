@@ -156,6 +156,26 @@ func (o orderType) String() string {
 		return "BRK"
 	case nop:
 		return "NOP"
+	case dop:
+		return "DOP"
+	case top:
+		return "TOP"
+	case lax:
+		return "LAX"
+	case sax:
+		return "SAX"
+	case dcp:
+		return "DCP"
+	case isb:
+		return "ISB"
+	case slo:
+		return "SLO"
+	case rla:
+		return "RLA"
+	case sre:
+		return "SRE"
+	case rra:
+		return "RRA"
 	}
 	return "Unknown"
 }
@@ -233,6 +253,16 @@ const (
 	sei
 	brk
 	nop
+	dop
+	top
+	lax
+	sax
+	dcp
+	isb
+	slo
+	rla
+	sre
+	rra
 )
 
 var operators map[byte]*Operator
@@ -259,7 +289,7 @@ func (o *Operator) ConsumedPos() int {
 }
 
 func (o *Operator) String() string {
-	return fmt.Sprintf("[%s] [%s]", o.order, o.addressing)
+	return fmt.Sprintf("[%02x] [%s] [%s]", o.code, o.order, o.addressing)
 }
 
 func Lookup(b byte) *Operator {
@@ -421,6 +451,7 @@ func init() {
 	register(&Operator{code: 0x7E, order: ror, addressing: absoluteX})
 
 	register(&Operator{code: 0xE9, order: sbc, addressing: immediate})
+	register(&Operator{code: 0xEB, order: sbc, addressing: immediate})
 	register(&Operator{code: 0xE5, order: sbc, addressing: zeropage})
 	register(&Operator{code: 0xF5, order: sbc, addressing: zeropageX})
 	register(&Operator{code: 0xED, order: sbc, addressing: absolute})
@@ -462,5 +493,90 @@ func init() {
 
 	register(&Operator{code: 0x00, order: brk, addressing: implied})
 
+	register(&Operator{code: 0xA3, order: lax, addressing: indirectX})
+	register(&Operator{code: 0xA7, order: lax, addressing: zeropage})
+	register(&Operator{code: 0xAF, order: lax, addressing: absolute})
+	register(&Operator{code: 0xB3, order: lax, addressing: indirectY})
+	register(&Operator{code: 0xB7, order: lax, addressing: zeropageY})
+	register(&Operator{code: 0xBF, order: lax, addressing: absoluteY})
+
+	register(&Operator{code: 0x83, order: sax, addressing: indirectX})
+	register(&Operator{code: 0x87, order: sax, addressing: zeropage})
+	register(&Operator{code: 0x8F, order: sax, addressing: absolute})
+	register(&Operator{code: 0x97, order: sax, addressing: zeropageY})
+
+	register(&Operator{code: 0x1A, order: nop, addressing: implied})
+	register(&Operator{code: 0x3A, order: nop, addressing: implied})
+	register(&Operator{code: 0x5A, order: nop, addressing: implied})
+	register(&Operator{code: 0x7A, order: nop, addressing: implied})
+	register(&Operator{code: 0xDA, order: nop, addressing: implied})
 	register(&Operator{code: 0xEA, order: nop, addressing: implied})
+	register(&Operator{code: 0xFA, order: nop, addressing: implied})
+
+	register(&Operator{code: 0x04, order: dop, addressing: zeropage})
+	register(&Operator{code: 0x44, order: dop, addressing: zeropage})
+	register(&Operator{code: 0x64, order: dop, addressing: zeropage})
+	register(&Operator{code: 0x14, order: dop, addressing: zeropageX})
+	register(&Operator{code: 0x34, order: dop, addressing: zeropageX})
+	register(&Operator{code: 0x54, order: dop, addressing: zeropageX})
+	register(&Operator{code: 0x74, order: dop, addressing: zeropageX})
+	register(&Operator{code: 0xD4, order: dop, addressing: zeropageX})
+	register(&Operator{code: 0xF4, order: dop, addressing: zeropageX})
+	register(&Operator{code: 0x80, order: dop, addressing: immediate})
+
+	register(&Operator{code: 0x0C, order: top, addressing: absolute})
+	register(&Operator{code: 0x1C, order: top, addressing: absoluteX})
+	register(&Operator{code: 0x3C, order: top, addressing: absoluteX})
+	register(&Operator{code: 0x5C, order: top, addressing: absoluteX})
+	register(&Operator{code: 0x7C, order: top, addressing: absoluteX})
+	register(&Operator{code: 0xDC, order: top, addressing: absoluteX})
+	register(&Operator{code: 0xFC, order: top, addressing: absoluteX})
+
+	register(&Operator{code: 0xC3, order: dcp, addressing: indirectX})
+	register(&Operator{code: 0xC7, order: dcp, addressing: zeropage})
+	register(&Operator{code: 0xCF, order: dcp, addressing: absolute})
+	register(&Operator{code: 0xD3, order: dcp, addressing: indirectY})
+	register(&Operator{code: 0xD7, order: dcp, addressing: zeropageX})
+	register(&Operator{code: 0xDB, order: dcp, addressing: absoluteY})
+	register(&Operator{code: 0xDF, order: dcp, addressing: absoluteX})
+
+	register(&Operator{code: 0xE3, order: isb, addressing: indirectX})
+	register(&Operator{code: 0xE7, order: isb, addressing: zeropage})
+	register(&Operator{code: 0xEF, order: isb, addressing: absolute})
+	register(&Operator{code: 0xF3, order: isb, addressing: indirectY})
+	register(&Operator{code: 0xF7, order: isb, addressing: zeropageX})
+	register(&Operator{code: 0xFB, order: isb, addressing: absoluteY})
+	register(&Operator{code: 0xFF, order: isb, addressing: absoluteX})
+
+	register(&Operator{code: 0x03, order: slo, addressing: indirectX})
+	register(&Operator{code: 0x07, order: slo, addressing: zeropage})
+	register(&Operator{code: 0x0F, order: slo, addressing: absolute})
+	register(&Operator{code: 0x13, order: slo, addressing: indirectY})
+	register(&Operator{code: 0x17, order: slo, addressing: zeropageX})
+	register(&Operator{code: 0x1B, order: slo, addressing: absoluteY})
+	register(&Operator{code: 0x1F, order: slo, addressing: absoluteX})
+
+	register(&Operator{code: 0x23, order: rla, addressing: indirectX})
+	register(&Operator{code: 0x27, order: rla, addressing: zeropage})
+	register(&Operator{code: 0x2F, order: rla, addressing: absolute})
+	register(&Operator{code: 0x33, order: rla, addressing: indirectY})
+	register(&Operator{code: 0x37, order: rla, addressing: zeropageX})
+	register(&Operator{code: 0x3B, order: rla, addressing: absoluteY})
+	register(&Operator{code: 0x3F, order: rla, addressing: absoluteX})
+
+	register(&Operator{code: 0x43, order: sre, addressing: indirectX})
+	register(&Operator{code: 0x47, order: sre, addressing: zeropage})
+	register(&Operator{code: 0x4F, order: sre, addressing: absolute})
+	register(&Operator{code: 0x53, order: sre, addressing: indirectY})
+	register(&Operator{code: 0x57, order: sre, addressing: zeropageX})
+	register(&Operator{code: 0x5B, order: sre, addressing: absoluteY})
+	register(&Operator{code: 0x5F, order: sre, addressing: absoluteX})
+
+	register(&Operator{code: 0x63, order: rra, addressing: indirectX})
+	register(&Operator{code: 0x67, order: rra, addressing: zeropage})
+	register(&Operator{code: 0x6F, order: rra, addressing: absolute})
+	register(&Operator{code: 0x73, order: rra, addressing: indirectY})
+	register(&Operator{code: 0x77, order: rra, addressing: zeropageX})
+	register(&Operator{code: 0x7B, order: rra, addressing: absoluteY})
+	register(&Operator{code: 0x7F, order: rra, addressing: absoluteX})
 }

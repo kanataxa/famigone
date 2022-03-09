@@ -1,8 +1,6 @@
 package cpu
 
 import (
-	"fmt"
-
 	"github.com/kanataxa/famigone/pkg/bus"
 )
 
@@ -163,8 +161,28 @@ func (c *CPU) operate(op *Operator) {
 		if c.BRK() {
 			return
 		}
+	case lax:
+		c.LAX()
+	case sax:
+		c.SAX()
 	case nop:
 		c.NOP()
+	case dop:
+		c.DOP()
+	case top:
+		c.TOP()
+	case dcp:
+		c.DCP()
+	case isb:
+		c.ISB()
+	case slo:
+		c.SLO()
+	case rla:
+		c.RLA()
+	case sre:
+		c.SRE()
+	case rra:
+		c.RRA()
 	}
 	c.Next()
 }
@@ -179,11 +197,7 @@ func (c *CPU) Next() byte {
 }
 
 func (c *CPU) LDA() {
-	pos := c.register.PC
-	op := Lookup(c.Current())
-	address := c.addressingValue()
-	val := uint16(c.bus.Read(address))
-	fmt.Printf("LDA %04x %s %04x %04x\n", pos, op.addressing, address, val)
+	val := uint16(c.bus.Read(c.addressingValue()))
 	c.register.A = uint8(val)
 	c.register.SetZ(val)
 	c.register.SetN(val)
@@ -205,7 +219,7 @@ func (c *CPU) LDY() {
 
 func (c *CPU) STA() {
 	val := c.addressingValue()
-	fmt.Printf("STA %04x %04x \n", val, c.register.A)
+	//fmt.Printf("STA %04x %04x \n", val, c.register.A)
 	c.bus.Write(val, c.register.A)
 }
 
@@ -254,7 +268,11 @@ func (c *CPU) TYA() {
 }
 
 func (c *CPU) ADC() {
-	val := c.bus.Read(c.addressingValue())
+	c.adc(c.addressingValue())
+}
+
+func (c *CPU) adc(address uint16) {
+	val := c.bus.Read(address)
 	var rc uint8
 	if c.register.P.C {
 		rc = 1
@@ -265,10 +283,15 @@ func (c *CPU) ADC() {
 	c.register.SetZ(uint16(c.register.A))
 	c.register.P.C = uint16(a)+uint16(rc)+uint16(val) > 0xFF
 	c.register.P.V = (a^val)&0x80 == 0 && (a^c.register.A)&0x80 != 0
+
 }
 
 func (c *CPU) AND() {
-	val := c.bus.Read(c.addressingValue())
+	c.and(c.addressingValue())
+}
+
+func (c *CPU) and(address uint16) {
+	val := c.bus.Read(address)
 	c.register.A &= val
 	c.register.SetN(uint16(c.register.A))
 	c.register.SetZ(uint16(c.register.A))
@@ -276,19 +299,23 @@ func (c *CPU) AND() {
 
 func (c *CPU) ASL() {
 	if Lookup(c.Current()).addressing == accumulator {
-		c.register.P.C = c.register.A&0x80 == 0x80
+		c.register.P.C = c.register.A&0x80 != 0
 		c.register.A <<= 1
 		c.register.SetN(uint16(c.register.A))
 		c.register.SetZ(uint16(c.register.A))
 	} else {
 		address := c.addressingValue()
-		val := uint16(c.bus.Read(address))
-		c.register.P.C = val&0x80 == 0x80
-		val <<= 1
-		c.bus.Write(address, uint8(val))
-		c.register.SetN(val)
-		c.register.SetZ(val)
+		c.aslOtherThanAccumulator(address)
 	}
+}
+
+func (c *CPU) aslOtherThanAccumulator(address uint16) {
+	val := c.bus.Read(address)
+	c.register.P.C = val&0x80 != 0
+	val <<= 1
+	c.bus.Write(address, val)
+	c.register.SetN(uint16(val))
+	c.register.SetZ(uint16(val))
 }
 
 func (c *CPU) BIT() {
@@ -319,14 +346,21 @@ func (c *CPU) cp(a, b uint8) {
 }
 
 func (c *CPU) EOR() {
-	val := c.bus.Read(c.addressingValue())
+	c.eor(c.addressingValue())
+}
+
+func (c *CPU) eor(address uint16) {
+	val := c.bus.Read(address)
 	c.register.A ^= val
 	c.register.SetN(uint16(c.register.A))
 	c.register.SetZ(uint16(c.register.A))
 }
 
 func (c *CPU) DEC() {
-	address := c.addressingValue()
+	c.dec(c.addressingValue())
+}
+
+func (c *CPU) dec(address uint16) {
 	val := c.bus.Read(address) - 1
 	c.bus.Write(address, val)
 	c.register.SetN(uint16(val))
@@ -346,7 +380,10 @@ func (c *CPU) DEY() {
 }
 
 func (c *CPU) INC() {
-	address := c.addressingValue()
+	c.inc(c.addressingValue())
+}
+
+func (c *CPU) inc(address uint16) {
 	val := c.bus.Read(address) + 1
 	c.bus.Write(address, val)
 	c.register.SetN(uint16(val))
@@ -373,66 +410,94 @@ func (c *CPU) LSR() {
 		c.register.SetZ(uint16(c.register.A))
 	} else {
 		address := c.addressingValue()
-		val := uint16(c.bus.Read(address))
-		c.register.P.C = val&1 == 1
-		val >>= 1
-		c.bus.Write(address, uint8(val))
-		c.register.SetN(val)
-		c.register.SetZ(val)
+		c.lsrOtherThanAccumulator(address)
 	}
 }
 
+func (c *CPU) lsrOtherThanAccumulator(address uint16) {
+	val := uint16(c.bus.Read(address))
+	c.register.P.C = val&1 == 1
+	val >>= 1
+	c.bus.Write(address, uint8(val))
+	c.register.SetN(val)
+	c.register.SetZ(val)
+}
+
 func (c *CPU) ORA() {
-	val := c.bus.Read(c.addressingValue())
+	c.ora(c.addressingValue())
+}
+
+func (c *CPU) ora(address uint16) {
+	val := c.bus.Read(address)
 	c.register.A |= val
 	c.register.SetN(uint16(c.register.A))
 	c.register.SetZ(uint16(c.register.A))
 }
 
 func (c *CPU) ROL() {
-	var cv uint8
-	if c.register.P.C {
-		cv = 1
-	}
 	if Lookup(c.Current()).addressing == accumulator {
+		var cv uint8
+		if c.register.P.C {
+			cv = 1
+		}
 		c.register.P.C = c.register.A&0x80 == 0x80
 		c.register.A = (c.register.A << 1) | cv
 		c.register.SetN(uint16(c.register.A))
 		c.register.SetZ(uint16(c.register.A))
 	} else {
 		address := c.addressingValue()
-		val := c.bus.Read(address)
-		c.register.P.C = val&0x80 == 0x80
-		val = (val << 1) | cv
-		c.bus.Write(address, val)
-		c.register.SetN(uint16(val))
-		c.register.SetZ(uint16(val))
+		c.rolOtherThanAccumulator(address)
 	}
 }
 
-func (c *CPU) ROR() {
+func (c *CPU) rolOtherThanAccumulator(address uint16) {
 	var cv uint8
 	if c.register.P.C {
 		cv = 1
 	}
+	val := c.bus.Read(address)
+	c.register.P.C = val&0x80 == 0x80
+	val = (val << 1) | cv
+	c.bus.Write(address, val)
+	c.register.SetN(uint16(val))
+	c.register.SetZ(uint16(val))
+}
+
+func (c *CPU) ROR() {
 	if Lookup(c.Current()).addressing == accumulator {
+		var cv uint8
+		if c.register.P.C {
+			cv = 1
+		}
 		c.register.P.C = c.register.A&1 == 1
 		c.register.A = (c.register.A >> 1) | (cv << 7)
 		c.register.SetN(uint16(c.register.A))
 		c.register.SetZ(uint16(c.register.A))
 	} else {
 		address := c.addressingValue()
-		val := c.bus.Read(address)
-		c.register.P.C = val&1 == 1
-		val = (val >> 1) | (cv << 7)
-		c.bus.Write(address, val)
-		c.register.SetN(uint16(val))
-		c.register.SetZ(uint16(val))
+		c.rorOtherThanAccumulator(address)
 	}
 }
 
+func (c *CPU) rorOtherThanAccumulator(address uint16) {
+	var cv uint8
+	if c.register.P.C {
+		cv = 1
+	}
+	val := c.bus.Read(address)
+	c.register.P.C = val&1 == 1
+	val = (val >> 1) | (cv << 7)
+	c.bus.Write(address, val)
+	c.register.SetN(uint16(val))
+	c.register.SetZ(uint16(val))
+}
+
 func (c *CPU) SBC() {
-	val := c.bus.Read(c.addressingValue())
+	c.sbc(c.addressingValue())
+}
+
+func (c *CPU) sbc(address uint16) {
+	val := c.bus.Read(address)
 	a := c.register.A
 	var carry uint8
 	if !c.register.P.C {
@@ -446,6 +511,7 @@ func (c *CPU) SBC() {
 	c.register.P.C = int(a)-int(val)-int(carry) >= 0
 	// オーバフローは同符号の時に発生する
 	c.register.P.V = (a^val)&0x80 != 0 && (a^c.register.A)&0x80 != 0
+
 }
 
 func (c *CPU) PHA() {
@@ -463,7 +529,7 @@ func (c *CPU) PLA() {
 }
 
 func (c *CPU) PLP() {
-	c.register.P.Load(c.popStack())
+	c.register.P.Load(c.popStack()&0xEF | 0x20)
 }
 
 func (c *CPU) JMP() {
@@ -607,7 +673,67 @@ func (c *CPU) BRK() bool {
 	return true
 }
 
+func (c *CPU) LAX() {
+	val := c.bus.Read(c.addressingValue())
+	c.register.X = val
+	c.register.A = val
+	c.register.SetZ(uint16(val))
+	c.register.SetN(uint16(val))
+}
+
+func (c *CPU) SAX() {
+	addr := c.addressingValue()
+	val := c.register.X & c.register.A
+	c.bus.Write(addr, val)
+	//c.register.SetZ(uint16(val))
+	//c.register.SetN(uint16(val))
+}
+
 func (c *CPU) NOP() {
+}
+
+func (c *CPU) DOP() {
+	c.addressingValue()
+}
+
+func (c *CPU) TOP() {
+	c.addressingValue()
+}
+
+func (c *CPU) DCP() {
+	addr := c.addressingValue()
+	c.dec(addr)
+	c.cp(c.register.A, c.bus.Read(addr))
+}
+
+func (c *CPU) ISB() {
+	addr := c.addressingValue()
+	c.inc(addr)
+	c.sbc(addr)
+}
+
+func (c *CPU) SLO() {
+	addr := c.addressingValue()
+	c.aslOtherThanAccumulator(addr)
+	c.ora(addr)
+}
+
+func (c *CPU) RLA() {
+	addr := c.addressingValue()
+	c.rolOtherThanAccumulator(addr)
+	c.and(addr)
+}
+
+func (c *CPU) SRE() {
+	addr := c.addressingValue()
+	c.lsrOtherThanAccumulator(addr)
+	c.eor(addr)
+}
+
+func (c *CPU) RRA() {
+	addr := c.addressingValue()
+	c.rorOtherThanAccumulator(addr)
+	c.adc(addr)
 }
 
 func (c *CPU) addressingValue() uint16 {
